@@ -12,7 +12,7 @@ def pktHandler(timestamp,srcIP,dstIP,lengthIP,file,sampDelta=1):
     global outc
     global last_ks
     
-    #print(timestamp,srcIP,dstIP,lengthIP)
+    print(timestamp,srcIP,dstIP,lengthIP)
     if (IPAddress(srcIP) in scnets and IPAddress(dstIP) in ssnets) or (IPAddress(srcIP) in ssnets and IPAddress(dstIP) in scnets):
         if npkts==0:
             T0=float(timestamp)
@@ -87,16 +87,22 @@ def main():
     streams_file = args.get_streams
     print("... Reading streams from")
     streams = open(streams_file,'r')
-    file = open("sshdata.txt",'w') 
+    file = open("sshdata2.txt",'w') 
     for stream in streams:
         npkts=0
         outc=[0,0,0,0]
         sampDelta=1
-        string = 'ssh && !tcp.analysis.spurious_retransmission && !tcp.analysis.retransmission && !tcp.analysis.fast_retransmission && tcp.stream==' + str(stream).rstrip()
+        #string = 'ssh && !tcp.analysis.spurious_retransmission && !tcp.analysis.retransmission && !tcp.analysis.fast_retransmission && tcp.stream==' + str(stream).rstrip()
+        
+        string = 'tcp.stream==' + str(stream).rstrip()
+        print(string)
         capture = pyshark.FileCapture(fileInput,display_filter=string)
         
         i = 0
+        print(capture)
+        print("Stream no: "+ str(stream).rstrip() +"--------------------------------------\n")
         file.write("Stream no: "+ str(stream).rstrip() +"--------------------------------------\n")
+        
         for pkt in capture:
             timestamp,srcIP,dstIP,lengthIP=pkt.sniff_timestamp,pkt['ip'].src,pkt['ip'].dst,pkt['ip'].len
             if i==0:
@@ -114,6 +120,8 @@ def main():
             pktHandler(timestamp,srcIP,dstIP,lengthIP,file,sampDelta)
             
             i+=1
+            print(pkt)
+        print("AAAAAAAAAAAAAAAAAA")
 
     file.close()
     streams.close()
