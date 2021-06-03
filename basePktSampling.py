@@ -5,43 +5,46 @@ from netaddr import IPNetwork, IPAddress, IPSet
 import pyshark
 
 def pktHandler(timestamp,srcIP,dstIP,lengthIP,file,sampDelta=1):
-    global scnets
-    global ssnets
     global npkts
     global T0
     global outc
     global last_ks
+    global source
+    global dest
+    
     
     print(timestamp,srcIP,dstIP,lengthIP)
-    if (IPAddress(srcIP) in scnets and IPAddress(dstIP) in ssnets) or (IPAddress(srcIP) in ssnets and IPAddress(dstIP) in scnets):
-        if npkts==0:
-            T0=float(timestamp)
-            last_ks=0
-                
-        ks=int((float(timestamp)-T0)/sampDelta)
+    #if (IPAddress(srcIP) in scnets and IPAddress(dstIP) in ssnets) or (IPAddress(srcIP) in ssnets and IPAddress(dstIP) in scnets):
+    if npkts==0:
+        T0=float(timestamp)
+        last_ks=0
+    print(T0,timestamp)            
+    ks=int((float(timestamp)-T0)/sampDelta)
+    if ks>last_ks:
+        print('{} {} {} {} {}'.format(last_ks,*outc))
+        file.write(' '.join([str(elem) for elem in outc]))
+        file.write('\n')
+        print("written")
+        outc=[0,0,0,0]  
             
-        if ks>last_ks:
-            print('{} {} {} {} {}'.format(last_ks,*outc))
+    if ks>last_ks+1:
+        for j in range(last_ks+1,ks):
+            print('{} {} {} {} {}'.format(j,*outc))
             file.write(' '.join([str(elem) for elem in outc]))
             file.write('\n')
-            outc=[0,0,0,0]  
-            
-        if ks>last_ks+1:
-            for j in range(last_ks+1,ks):
-                print('{} {} {} {} {}'.format(j,*outc))
-                file.write(' '.join([str(elem) for elem in outc]))
-                file.write('\n')
+            print("written")
                     
         
-        if IPAddress(srcIP) in scnets: #Upload
-            outc[0]=outc[0]+1
-            outc[1]=outc[1]+int(lengthIP)
+    if srcIP == source:
+        outc[0]=outc[0]+1
+        outc[1]=outc[1]+int(lengthIP)
 
-        if IPAddress(dstIP) in scnets: #Download
-            outc[2]=outc[2]+1
-            outc[3]=outc[3]+int(lengthIP)
-        last_ks=ks
-        npkts=npkts+1
+    if srcIP == dest:
+        outc[2]=outc[2]+1
+        outc[3]=outc[3]+int(lengthIP)
+    
+    last_ks=ks
+    npkts=npkts+1
 
 def get_streams(pcap):
 
@@ -65,8 +68,8 @@ def main():
     
     args=parser.parse_args()
 
-    global scnets
-    global ssnets
+    global source
+    global dest
 
     fileInput=args.input
         
@@ -92,36 +95,19 @@ def main():
         npkts=0
         outc=[0,0,0,0]
         sampDelta=1
-        #string = 'ssh && !tcp.analysis.spurious_retransmission && !tcp.analysis.retransmission && !tcp.analysis.fast_retransmission && tcp.stream==' + str(stream).rstrip()
-        
-        string = 'tcp.stream==' + str(stream).rstrip()
-        print(string)
-        capture = pyshark.FileCapture(fileInput,display_filter=string)
-        
-        i = 0
-        print(capture)
+        #string = 'ssh && !tcp.analysis.spurious_retransmission && !tcp.analysis.retran
         print("Stream no: "+ str(stream).rstrip() +"--------------------------------------\n")
         file.write("Stream no: "+ str(stream).rstrip() +"--------------------------------------\n")
         
         for pkt in capture:
             timestamp,srcIP,dstIP,lengthIP=pkt.sniff_timestamp,pkt['ip'].src,pkt['ip'].dst,pkt['ip'].len
-            if i==0:
-
-                cnets=[]
-                nn=IPNetwork(str(pkt['ip'].src)+"/24")
-                cnets.append(nn)
-                scnets=IPSet(cnets)
-
-                snets=[]
-                nn=IPNetwork(str(pkt['ip'].dst)+"/24")
-                snets.append(nn)
-                ssnets=IPSet(snets)
+            print(timestamp)
+            if i:
+                source = srcIP
+                dest = dstIP
+                i = False
 
             pktHandler(timestamp,srcIP,dstIP,lengthIP,file,sampDelta)
-            
-            i+=1
-            print(pkt)
-        print("AAAAAAAAAAAAAAAAAA")
 
     file.close()
     streams.close()
