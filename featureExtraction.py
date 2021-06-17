@@ -132,6 +132,9 @@ def main():
     sizeAnom = 0
     sizeOk = 0
 
+    testFiles.append("streams2/1.txt")
+    testFiles.append("streams2/3.txt")
+    all_scores = np.array([])
     for file in testFiles:
         print(file)
         test = np.loadtxt(open(file, 'r'), dtype=int)
@@ -147,13 +150,14 @@ def main():
 
         a = model.predict(test_featuresNPCA)
         b = model.decision_function(test_featuresNPCA)
+        all_scores = np.concatenate((b, all_scores))
         #print(a)
         #print(b)
         totalTests += 1
         anom = 0
-        if len(test)-3>30:
-            for prediction in a:
-                if prediction == -1:
+        if len(test)-3>15:
+            for i,prediction in enumerate(a):
+                if prediction == -1 and b[i] <= -0.125:
                     anom += 1
             
             if anom/len(a) >0.5:
@@ -166,6 +170,7 @@ def main():
                 sizeOk += len(test)-3
                 print("OK")
 
+    all_scores = all_scores[all_scores < 0]
     test = np.loadtxt(open('streams2/3.txt', 'r'), dtype=int)
     windows = np.array(slidingObsWindow(test, 3, 1))
     features_timedependent = extractFeatures(windows)
@@ -179,6 +184,24 @@ def main():
 
     a = model.predict(test_featuresNPCA)
     b = model.decision_function(test_featuresNPCA)
+
+    print(a)
+    print(b)
+
+    test = np.loadtxt(open('streams2/1.txt', 'r'), dtype=int)
+    windows = np.array(slidingObsWindow(test, 3, 1))
+    features_timedependent = extractFeatures(windows)
+    features_timeindependent = extractFeaturesSilence(windows)
+    # featuresW = extractFeaturesWavelet(windows)
+    test_features = np.hstack((features_timedependent, features_timeindependent))
+
+    test_featuresN = trainScaler.transform(test_features)
+    test_featuresNPCA = trainPCA.transform(test_featuresN)
+    # print(features)
+
+    a = model.predict(test_featuresNPCA)
+    b = model.decision_function(test_featuresNPCA)
+    print(np.average(b))
     print(a)
     print(b)
 
