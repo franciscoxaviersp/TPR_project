@@ -4,12 +4,12 @@ import pyshark
 
 
 def main():
-    pcap = 'asdasd.pcapng'
+    pcap = 'streams2/3.pcapng'
     '''
     pcap = pyshark.FileCapture(pcap, display_filter='ssh')
     
     streams = []
-    file = open("streamsteste2.txt",'w')
+    file = open("streams2/teste.txt",'w')
     for pkt in pcap:
         stream = int(pkt['tcp'].stream)
         if stream not in streams:
@@ -20,10 +20,10 @@ def main():
     file.close()
     pcap.close()
     return
-    '''
+'''
 
-    streams = open('streamsteste2.txt','r').readlines()
-    file = open("sshdatateste2.txt",'w')
+    streams = open('streams2/teste.txt','r').readlines()
+    file = open("streams2/3.txt",'w')
     
     sampDelta=1
     streams = [stream.rstrip() for stream in streams] 
