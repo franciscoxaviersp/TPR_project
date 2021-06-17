@@ -9,11 +9,11 @@ from sklearn.ensemble import IsolationForest
 def slidingObsWindow(data, lengthObsWindow, slidingValue):
     windows = []
     nSamples, nMetrics = data.shape
-    #print("Observation window size: {}\nSliding value: {}".format(lengthObsWindow, slidingValue))
+    # print("Observation window size: {}\nSliding value: {}".format(lengthObsWindow, slidingValue))
     for s in np.arange(lengthObsWindow, nSamples, slidingValue):
-        #print("\nAt sample: {}\n".format(s - 1))
+        # print("\nAt sample: {}\n".format(s - 1))
         subdata = data[s - lengthObsWindow:s, :]
-        #print(subdata)
+        # print(subdata)
         windows.append(subdata)
     return windows
 
@@ -27,12 +27,12 @@ def extractFeatures(data):
         p = [75, 90, 95]
         Pr1 = np.array(np.percentile(data[i, :, :], p, axis=0)).T.flatten()
 
-        a = np.sum(data[i,:,0])
-        b = np.sum(data[i,:,2])
-        total = a+b
+        a = np.sum(data[i, :, 0])
+        b = np.sum(data[i, :, 2])
+        total = a + b
         upload_ratio = 0
         download_ratio = 0
-        #print(packet_ratio)
+        # print(packet_ratio)
         if total != 0:
             upload_ratio = a / total
             download_ratio = b / total
@@ -63,7 +63,7 @@ def extractFeaturesSilence(data):
     nObs, nSamp, nCols = data.shape
     for i in range(nObs):
         silence_features = np.array([])
-        for c in [0,2]:
+        for c in [0, 2]:
             silence = extratctSilence(data[i, :, c], threshold=0)
             if len(silence) > 0:
                 silence_features = np.append(silence_features, [np.mean(silence), np.var(silence)])
@@ -74,28 +74,29 @@ def extractFeaturesSilence(data):
 
     return (np.array(features))
 
+
 def main():
     windows_all = np.array([])
     i = 0
     for folder in ['streams', 'streams05']:
         for file in os.listdir(folder):
             print(file)
-            fileInput = open('{}/{}'.format(folder,file), 'r')
-            data=np.loadtxt(fileInput,dtype=int)
+            fileInput = open('{}/{}'.format(folder, file), 'r')
+            data = np.loadtxt(fileInput, dtype=int)
             windows = np.array(slidingObsWindow(data, 3, 1))
             if i == 0:
                 windows_all = windows
             else:
                 windows_all = np.concatenate((windows, windows_all))
-            i+=1
+            i += 1
     features_timedependent = extractFeatures(windows_all)
     features_timeindependent = extractFeaturesSilence(windows_all)
     features = np.hstack((features_timedependent, features_timeindependent))
     model = IsolationForest(n_estimators=50, max_samples='auto', contamination='auto', max_features=1.0)
     model.fit(features)
 
-    test=np.loadtxt(open('streams2/3.txt', 'r'), dtype=int)
-    windows = np.array(slidingObsWindow(test,3,1))
+    test = np.loadtxt(open('streams2/3.txt', 'r'), dtype=int)
+    windows = np.array(slidingObsWindow(test, 3, 1))
     features_timedependent = extractFeatures(windows)
     features_timeindependent = extractFeaturesSilence(windows)
     features = np.hstack((features_timedependent, features_timeindependent))
@@ -105,8 +106,6 @@ def main():
     b = model.decision_function(features)
     print(a)
     print(b)
-
-
 
 
 if __name__ == '__main__':
