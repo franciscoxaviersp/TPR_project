@@ -18,6 +18,8 @@ def predict(folder):
     totalAnom = 0
     totalSessions = 0
 
+    features = []
+
     for file in os.listdir(folder):
         print(file)
         test = np.loadtxt(open(folder+"/"+file, 'r'), dtype=int)
@@ -29,9 +31,11 @@ def predict(folder):
         test_featuresN=trainScaler.transform(test_features)
         test_featuresNPCA = trainPCA.transform(test_featuresN)
 
+        features.append(test_featuresNPCA)
         a = model.predict(test_featuresNPCA)
         b = model.decision_function(test_featuresNPCA)
 
+        
         totalSessions += 1
         anom = 0
         if len(test)-3>15:
@@ -48,7 +52,8 @@ def predict(folder):
                 print(np.average(b))
                 print("OK")
 
-    return (totalSessions,totalAnom)
+    predictions = model.predict(features)
+    #return (totalSessions,totalAnom)
 
 def main():
 
@@ -67,15 +72,33 @@ def main():
     print("Predicting on ok sessions")
     p = predict("streams_ok")
     
-    total = p[0]
+    total_ok = p[0]
     anomalies = p[1]
-    ok = total - anomalies
+    ok = total_ok - anomalies
     FP = anomalies
     TN = ok
     print("True negatives: "+str(TN))
     print("False positives: "+str(FP))
-    print("Percentage of false positives: "+str(FP/total))
+    print("Percentage of false positives: "+str(FP/total_ok))
+
+    #testing anomalous sessions
+    print("Predicting on anomalous sessions")
+    p = predict("streams_anom")
+    total_anom = p[0]
+    anomalies = p[1]
+    ok = total_anom - anomalies
+    TP = anomalies
+    FN = ok
+    print("True positive: "+str(TP))
+    print("False negative: "+str(FN))
+    print("Percentage of false negatives: "+str(FN/total_ok))
+
+    accuracy= (TP+TN)/(TP+TN+FP+FN)
+    precision= TP/(TP+FP)
+    recall= TP/(TP+FN)
+    f1_Score = 2*(recall * precision) / (recall + precision)
     
+
 
 if __name__ == '__main__':
     main()
