@@ -84,12 +84,11 @@ def main():
     i = 0
     nFiles = len(os.listdir('streams')) + len(os.listdir('streams05'))
     testFiles = []
-    for folder in ['streams', 'streams05']:
+    for folder in ['streams_dataset_1', 'streams_dataset_2']:
         for file in os.listdir(folder):
             
             prob = random()
             if prob < 0.7:
-                print(file)
                 fileInput = open('{}/{}'.format(folder, file), 'r')
                 data = np.loadtxt(fileInput, dtype=int)
                 windows = np.array(slidingObsWindow(data, 3, 1))
@@ -123,52 +122,10 @@ def main():
     with open("model","wb") as f:
         pickle.dump(model,f)
         f.close()
+    with open("test_files", "w") as f:
+        for file in testFiles:
+            f.write(file+"\n")
 
-    totalAnom = 0
-    totalTests = 0
-    sizeAnom = 0
-    sizeOk = 0
-
-    with open('model', 'rb') as pickle_file:
-        model = pickle.load(pickle_file)
-    
-    for file in testFiles:
-        print(file)
-        test = np.loadtxt(open(file, 'r'), dtype=int)
-        windows = np.array(slidingObsWindow(test, 3, 1))
-        features_timedependent = extractFeatures(windows)
-        features_timeindependent = extractFeaturesSilence(windows)
-        test_features = np.hstack((features_timedependent, features_timeindependent))
-
-        test_featuresN=trainScaler.transform(test_features)
-        test_featuresNPCA = trainPCA.transform(test_featuresN)
-
-        a = model.predict(test_featuresNPCA)
-        b = model.decision_function(test_featuresNPCA)
-
-        totalTests += 1
-        anom = 0
-        if len(test)-3>0: #change 0 to minimum session time
-            for i,prediction in enumerate(a):
-                if prediction == -1 and b[i] <= 0:  #increase 0 to be more strict(more anomalies), decrease to be less strict(less anomalies)
-                    anom += 1
-            
-            if anom/len(a) >0.5:
-                totalAnom += 1
-                sizeAnom += len(test)-3
-                print("ANOMALY")
-            else:
-                sizeOk += len(test)-3
-                print("OK")
-
-
-    print("OK average stream time (seconds): "+ str(sizeOk/(totalTests-totalAnom)))
-    print("Anomalies average stream time (seconds): "+ str(sizeAnom/totalAnom))
-
-    print("Test size: "+str(totalTests))
-    print("Total anomalies: "+str(totalAnom))
-
-    print("Percentage of accurate prediction on test dataset: "+str(100-(totalAnom/totalTests)*100))
 
 
 if __name__ == '__main__':

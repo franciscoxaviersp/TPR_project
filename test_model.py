@@ -1,5 +1,6 @@
 import os
 import pickle
+import sys
 
 import numpy as np
 from sklearn.ensemble import IsolationForest
@@ -9,7 +10,7 @@ from featureExtraction import (extractFeatures, extractFeaturesSilence,
                                slidingObsWindow)
 
 
-def predict(folder):
+def predict(folder, file_check=False, debug=False):
 
     global model
     global trainScaler
@@ -20,9 +21,17 @@ def predict(folder):
 
     features = []
 
-    for file in os.listdir(folder):
-        print(file)
-        test = np.loadtxt(open(folder+"/"+file, 'r'), dtype=int)
+    if file_check:
+        test_files = open(folder, "r").read().split("\n")
+    else:
+        test_files = os.listdir(folder)
+
+    for file in test_files:
+
+        if file_check:
+            test = np.loadtxt(open(file, 'r'), dtype=int)
+        else:
+            test = np.loadtxt(open(folder+"/"+file, 'r'), dtype=int)
         windows = np.array(slidingObsWindow(test, 3, 1))
         features_timedependent = extractFeatures(windows)
         features_timeindependent = extractFeaturesSilence(windows)
@@ -45,17 +54,24 @@ def predict(folder):
             
             if anom/len(a) >0.5:
                 totalAnom += 1
-                print(a)
-                print(b)
-                print("ANOMALY")
+                if debug:
+                    print(a)
+                    print(b)
+                    print(np.average(b))
+                    print("ANOMALY")
             else:
-                print(np.average(b))
-                print("OK")
+                if debug:
+                    print(np.average(b))
+                    print("OK")
 
     return (totalSessions,totalAnom)
 
 def main():
 
+    try:
+        debug = sys.argv[1] == 'true'
+    except:
+        debug = False
     global model
     global trainScaler
     global trainPCA
@@ -67,13 +83,21 @@ def main():
     with open('model', 'rb') as pickle_file:
         model = pickle.load(pickle_file)
 
-    
+
+    print("Predicting on testing sessions")
+    total_ok, anomalies = predict("test_files", file_check=True, debug=debug)
+
+    ok = total_ok - anomalies
+    FP = anomalies
+    TN = ok
+    print("True negatives: " + str(TN))
+    print("False positives: " + str(FP))
+    print("Percentage of false positives: " + str(FP / total_ok))
+
     #testing ok/non anomaly sessions
     print("Predicting on ok sessions")
-    p = predict("streams_ok")
-    
-    total_ok = p[0]
-    anomalies = p[1]
+    total_ok, anomalies = predict("streams_ok", debug=debug)
+
     ok = total_ok - anomalies
     FP = anomalies
     TN = ok
@@ -84,9 +108,8 @@ def main():
     #testing anomalous sessions
     
     print("Predicting on anomalous sessions")
-    p = predict("streams_anom")
-    total_anom = p[0]
-    anomalies = p[1]
+    total_anom, anomalies = predict("streams_anom", debug=debug)
+
     ok = total_anom - anomalies
     TP = anomalies
     FN = ok
