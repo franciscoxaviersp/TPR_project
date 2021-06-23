@@ -1,36 +1,42 @@
 import sys
-import datetime
 import pyshark
+import argparse
 
 
 def main():
-    pcap = 'streams2/3.pcapng'
-    '''
-    pcap = pyshark.FileCapture(pcap, display_filter='ssh')
+
+    pcap = ''
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input",required=True, help="input pcap file")
+    parser.add_argument("--output",required=True, help="output txt file")
+    args = parser.parse_args()
+    pcap = args.input
+    file = args.output
+    
+    pcap_cap = pyshark.FileCapture(pcap, display_filter='ssh')
     
     streams = []
-    file = open("streams2/teste.txt",'w')
-    for pkt in pcap:
+
+    for pkt in pcap_cap:
         stream = int(pkt['tcp'].stream)
         if stream not in streams:
             streams.append(stream)
-            file.write(str(stream)+'\n')
 
+            print(stream)
+    print(streams)
     print("Number of tcp streams: "+str(len(streams)))
-    file.close()
-    pcap.close()
-    return
-'''
 
-    streams = open('streams2/teste.txt','r').readlines()
-    file = open("streams2/3.txt",'w')
+    pcap_cap.close()
+
+    file = open(file,'w')
     
     sampDelta=1
-    streams = [stream.rstrip() for stream in streams] 
+    streams = [str(stream) for stream in streams] 
     for stream in streams:
         count = [0,0,0,0]
         npkts = 0
-        print("Stream no: " + stream +"--------------------------------------\n")
+        print("Stream no: " + stream+"--------------------------------------\n")
         file.write("Stream no: " + stream +"--------------------------------------\n")
         capture = pyshark.FileCapture(pcap, display_filter='tcp.stream == {}'.format(stream))
         source = capture[0]['ip'].src
@@ -64,10 +70,8 @@ def main():
             last_ks=ks
             npkts=npkts+1
         capture.close()
-    streams.close()
-    file.close
-          
-            
+        
+    file.close()
 
     
 if __name__ == '__main__':
