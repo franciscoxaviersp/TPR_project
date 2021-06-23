@@ -52,8 +52,7 @@ def predict(folder):
                 print(np.average(b))
                 print("OK")
 
-    predictions = model.predict(features)
-    #return (totalSessions,totalAnom)
+    return (totalSessions,totalAnom)
 
 def main():
 
@@ -68,6 +67,7 @@ def main():
     with open('model', 'rb') as pickle_file:
         model = pickle.load(pickle_file)
 
+    
     #testing ok/non anomaly sessions
     print("Predicting on ok sessions")
     p = predict("streams_ok")
@@ -82,6 +82,7 @@ def main():
     print("Percentage of false positives: "+str(FP/total_ok))
 
     #testing anomalous sessions
+    
     print("Predicting on anomalous sessions")
     p = predict("streams_anom")
     total_anom = p[0]
@@ -97,8 +98,11 @@ def main():
     precision= TP/(TP+FP)
     recall= TP/(TP+FN)
     f1_Score = 2*(recall * precision) / (recall + precision)
-    
 
+    print("Accuracy: "+ str(accuracy))
+    print("Precision: " +str(precision))
+    print("Recall: " +str(recall))
+    print("F1-score: " +str(f1_Score))
 
 if __name__ == '__main__':
     main()
