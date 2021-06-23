@@ -8,6 +8,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import MaxAbsScaler
+from sklearn.svm import OneClassSVM
 
 
 def slidingObsWindow(data, lengthObsWindow, slidingValue):
@@ -82,7 +83,6 @@ def extractFeaturesSilence(data):
 def main():
     windows_all = np.array([])
     i = 0
-    nFiles = len(os.listdir('streams')) + len(os.listdir('streams05'))
     testFiles = []
     for folder in ['streams_dataset_1', 'streams_dataset_2']:
         for file in os.listdir(folder):
@@ -110,8 +110,10 @@ def main():
     trainPCA=pca.fit(train_featuresN)
     train_featuresNPCA = trainPCA.transform(train_featuresN)
 
-    model = IsolationForest(n_estimators=50, max_samples='auto', contamination='auto', max_features=1.0)
+    model = IsolationForest(n_estimators=100, max_samples='auto', contamination=float(0.1), max_features=1.0)
+    model_auto = IsolationForest(n_estimators=100, max_samples='auto', contamination='auto', max_features=1.0)
     model.fit(train_featuresNPCA)
+    model_auto.fit(train_featuresNPCA)
 
     with open("scaler","wb") as f:
         pickle.dump(trainScaler,f)
@@ -122,10 +124,20 @@ def main():
     with open("model","wb") as f:
         pickle.dump(model,f)
         f.close()
+    with open("model_auto","wb") as f:
+        pickle.dump(model_auto,f)
+        f.close()
     with open("test_files", "w") as f:
         for file in testFiles:
             f.write(file+"\n")
 
+    #One class SVM
+
+    svm = OneClassSVM(kernel="linear")
+    svm.fit(train_featuresN)
+
+    with open("svm_model", 'wb') as f:
+        pickle.dump(svm, f)
 
 
 if __name__ == '__main__':
