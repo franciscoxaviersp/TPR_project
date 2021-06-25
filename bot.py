@@ -1,6 +1,5 @@
 import time
 import random
-import paramiko
 import os
 import keyboard
 
@@ -10,7 +9,7 @@ def write(word):
         keyboard.press_and_release(letter)
 
 p = 'password'
-commands = ['dir', 'ipconfig', 'netstat /aon', 'powercfg /a', 'systeminfo','tasklist','driverquery','ping google.com'] 
+commands = ['dir', 'ipconfig', 'netstat /aon', 'powercfg /a', 'systeminfo','tasklist','driverquery','ping google.com'] # windows commands
 
 for i in range(100):
     time.sleep(2)
